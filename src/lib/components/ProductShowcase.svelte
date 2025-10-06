@@ -44,8 +44,8 @@
 		}
 		
 		.products-grid {
-			grid-template-columns: 1fr;
-			gap: 1rem;
+			grid-template-columns: 1fr !important;
+			gap: 0.5rem !important;
 		}
 	}
 

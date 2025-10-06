@@ -1,32 +1,8 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
-	import { browser } from '$app/environment';
-	import { onMount } from 'svelte';
 
 	let { children } = $props();
-	let isMobile = false;
-
-	onMount(() => {
-		const checkMobile = () => {
-			const width = window.innerWidth;
-			isMobile = width <= 768;
-			console.log('Screen width:', width, 'isMobile:', isMobile);
-		};
-		
-		checkMobile();
-		window.addEventListener('resize', checkMobile);
-		
-		return () => {
-			window.removeEventListener('resize', checkMobile);
-		};
-	});
-
-	// Force reactivity
-	$effect(() => {
-		console.log('isMobile changed to:', isMobile);
-		console.log('About to render:', isMobile ? 'MOBILE' : 'DESKTOP');
-	});
 </script>
 
 <svelte:head>
@@ -35,54 +11,52 @@
 	<meta name="description" content="Sister moooooon" />
 </svelte:head>
 
-{#if isMobile}
-	<!-- Mobile Layout -->
-	<div class="mobile-layout" style="border: 3px solid red;" key="mobile">
-		<!-- Mobile Header -->
-		<header class="mobile-header">
-			<div class="mobile-logo">
-				<a href="/" class="logo-link">
-					<img src="/logo.png" alt="Sister Moon Logo" class="logo" />
-				</a>
-			</div>
-			<div class="mobile-cart">
-				<a href="/cart" class="cart-link">Cart</a>
-			</div>
-		</header>
-		
-		<!-- Mobile Main Content -->
-		<main class="mobile-main">
-			{@render children?.()}
-		</main>
-	</div>
-{:else}
-	<!-- Desktop Layout -->
-	<div class="layout" style="border: 3px solid blue;" key="desktop">
-		<!-- Left Sidebar -->
-		<div class="sidebar left-sidebar">
-			<div class="logo-container">
-				<a href="/" class="logo-link">
-					<img src="/logo.png" alt="Sister Moon Logo" class="logo" />
-				</a>
-			</div>
+<!-- Mobile Layout -->
+<div class="mobile-layout">
+	<!-- Mobile Header -->
+	<header class="mobile-header">
+		<div class="mobile-logo">
+			<a href="/" class="logo-link">
+				<img src="/logo.png" alt="Sister Moon Logo" class="logo" />
+			</a>
 		</div>
+		<div class="mobile-cart">
+			<a href="/cart" class="cart-link">Cart</a>
+		</div>
+	</header>
+	
+	<!-- Mobile Main Content -->
+	<main class="mobile-main">
+		{@render children?.()}
+	</main>
+</div>
 
-		<!-- Main Content -->
-		<main class="main-content">
-			{@render children?.()}
-		</main>
-
-		<!-- Right Sidebar -->
-		<div class="sidebar right-sidebar">
-			<div class="cart-container">
-				<a href="/cart" class="cart-link">Cart</a>
-			</div>
+<!-- Desktop Layout -->
+<div class="desktop-layout">
+	<!-- Left Sidebar -->
+	<div class="sidebar left-sidebar">
+		<div class="logo-container">
+			<a href="/" class="logo-link">
+				<img src="/logo.png" alt="Sister Moon Logo" class="logo" />
+			</a>
 		</div>
 	</div>
-{/if}
+	
+	<!-- Main Content -->
+	<main class="main-content">
+		{@render children?.()}
+	</main>
+	
+	<!-- Right Sidebar -->
+	<div class="sidebar right-sidebar">
+		<div class="cart-container">
+			<a href="/cart" class="cart-link">Cart</a>
+		</div>
+	</div>
+</div>
 
 <style>
-	.layout {
+	.desktop-layout {
 		display: grid;
 		grid-template-columns: 100px 1fr 100px;
 		min-height: 100vh;
@@ -112,8 +86,6 @@
 
 	.main-content {
 		grid-column: 2;
-		margin-left: 100px;
-		margin-right: 100px;
 		background: white;
 		min-height: 100vh;
 	}
@@ -181,7 +153,7 @@
 
 	/* Mobile Layout Styles */
 	.mobile-layout {
-		display: flex;
+		display: none;
 		flex-direction: column;
 		min-height: 100vh;
 	}
@@ -191,7 +163,6 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 1rem;
-		border-bottom: 1px solid #e0e0e0;
 		background: white;
 		position: sticky;
 		top: 0;
@@ -230,5 +201,32 @@
 
 	.mobile-header .cart-link:hover {
 		color: #666;
+	}
+
+	/* Mobile responsive */
+	@media (max-width: 768px) {
+		.desktop-layout {
+			display: none;
+		}
+		
+		.mobile-layout {
+			display: flex;
+		}
+
+
+		/* Mobile hero adjustments */
+		.mobile-main :global(.hero) {
+			min-height: 60vh !important;
+		}
+
+		.mobile-main :global(.carousel-indicators) {
+			bottom: 1rem !important;
+			left: 15% !important;
+		}
+
+		.mobile-main :global(.indicator) {
+			width: 12px !important;
+			height: 12px !important;
+		}
 	}
 </style>
