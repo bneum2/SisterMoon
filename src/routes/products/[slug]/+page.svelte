@@ -77,17 +77,25 @@
 	}
 
 	@media (max-width: 768px) {
+		.container {
+			padding: 2rem 1rem;
+		}
+
 		.product-details {
 			grid-template-columns: 1fr;
 			gap: 2rem;
 		}
+
+		.product-info {
+			padding: 0 1rem;
+		}
 		
 		.product-title {
-			font-size: 1.5rem;
+			font-size: 1.25rem;
 		}
 		
 		.product-price {
-			font-size: 1.25rem;
+			font-size: 1rem;
 		}
 	}
 </style>

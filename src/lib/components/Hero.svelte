@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ArrowRight } from 'lucide-svelte';
+	import { onMount, onDestroy } from 'svelte';
 	
 	let currentSlide = 0;
 	const totalSlides = 4;
@@ -13,13 +14,27 @@
 	}
 	
 	// Preload the background image to prevent flashing
-	const img = new Image();
-	img.src = '/Banner.png';
+	let img: HTMLImageElement;
 	
 	// Auto-advance carousel every 5 seconds
-	setInterval(() => {
-		nextSlide();
-	}, 5000);
+	let intervalId: number;
+	
+	onMount(() => {
+		// Preload the background image to prevent flashing
+		img = new Image();
+		img.src = '/Banner.png';
+		
+		// Start auto-advance carousel
+		intervalId = setInterval(() => {
+			nextSlide();
+		}, 5000);
+	});
+	
+	onDestroy(() => {
+		if (intervalId) {
+			clearInterval(intervalId);
+		}
+	});
 </script>
 
 <section class="hero">
@@ -103,8 +118,8 @@
 		position: relative;
 		z-index: 2;
 		text-align: center;
-		max-width: 800px;
-		margin: 0 auto;
+		width: 100%;
+		margin: 0;
 		padding: 0 1rem;
 	}
 	
@@ -129,7 +144,27 @@
 		.hero-logo {
 			max-width: 250px;
 		}
-		
+
+		.hero-background {
+			background-size: cover;
+			background-position: center top;
+		}
+
+		.carousel-indicators {
+			bottom: 15px;
+			left: 50%;
+			transform: translateX(-50%);
+		}
+
+		.indicator {
+			width: 14px;
+			height: 14px;
+		}
+
+		.indicator.active::before {
+			width: 14px;
+			height: 14px;
+		}
 	}
 
 

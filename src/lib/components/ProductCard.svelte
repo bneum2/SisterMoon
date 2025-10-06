@@ -61,14 +61,18 @@
 		font-family: 'Helvetica', Arial, sans-serif;
 	}
 
-	@media (max-width: 800px) {
+	@media (max-width: 768px) {
 		.product-image {
-			height: 300px;
+			height: 350px;
 		}
 		
 		.product-title {
 			font-size: 0.9rem;
-			padding: 0rem 0;
+			padding: 1rem 0 0.25rem 0;
+		}
+
+		.product-price {
+			font-size: 0.8rem;
 		}
 	}
 </style>

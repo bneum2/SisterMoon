@@ -40,7 +40,7 @@
 		}
 		
 		.container {
-			padding: 0;
+			padding: 0 1rem;
 		}
 		
 		.products-grid {
