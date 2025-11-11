@@ -1,10 +1,25 @@
 export interface Product {
 	id: string;
+	shopifyId?: string;
 	name: string;
 	price: string;
 	image: string;
 	description: string;
 	slug: string;
+	variants?: Array<{
+		id: string;
+		title: string;
+		price: {
+			amount: string;
+			currencyCode: string;
+		};
+		availableForSale: boolean;
+		selectedOptions: Array<{
+			name: string;
+			value: string;
+		}>;
+	}>;
+	sizes?: string[];
 }
 
 export const products: Product[] = [
@@ -29,7 +44,7 @@ export const products: Product[] = [
 		name: 'Perla Dress',
 		price: "150",
 		image: '/PerlaDress.png',
-		description: 'Stunning pearl-inspired dress for special moments',
+		description: 'The Pearla Dress is a halter-style mini dress made from a lightweight blend of 55% linen and 45% cotton. It features a low, open back and a single mother-of-pearl button detail at the neck.',
 		slug: 'perla-dress'
 	}
 ];

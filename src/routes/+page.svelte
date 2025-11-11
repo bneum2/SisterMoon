@@ -1,9 +1,37 @@
 <script lang="ts">
-	import { products, type Product } from '$lib/data/products';
+	import { onMount } from 'svelte';
 	import { cart } from '$lib/stores/cart';
+	import type { Product } from '$lib/data/products';
 	
-	// Available sizes - you can customize this per product
-	const sizes = ['XS', 'S', 'M', 'L', 'XL'];
+	// Fetch products from API (which gets them from Shopify)
+	let products = $state<Product[]>([]);
+	let loading = $state(true);
+	
+	onMount(async () => {
+		try {
+			const response = await fetch('/api/products');
+			if (response.ok) {
+				const fetchedProducts = await response.json();
+				console.log('Products fetched:', fetchedProducts.length);
+				products = fetchedProducts;
+			} else {
+				console.error('Failed to fetch products. Status:', response.status);
+				const errorText = await response.text();
+				console.error('Error response:', errorText);
+			}
+		} catch (error) {
+			console.error('Error loading products:', error);
+		} finally {
+			loading = false;
+		}
+	});
+	
+	// Get sizes from product if available, otherwise use default
+	function getSizes(product: Product): string[] {
+		return product.sizes && product.sizes.length > 0 
+			? product.sizes 
+			: ['XS', 'S', 'M', 'L', 'XL'];
+	}
 	
 	// Track selected size for each product
 	let selectedSizes = $state<Record<string, string>>({});
@@ -29,46 +57,52 @@
 </script>
 
 <div class="product-page">
-	<div class="products-list">
-		{#each products as product}
-			<div class="product-row">
-				<img src={product.image} alt={product.name} class="product-image" />
-				<div class="product-details">
-					<div class="product-line-1">
-						<h2 class="product-name">{product.name}</h2>
-						<p class="product-price">{product.price}</p>
-					</div>
-					<div class="product-line-2">
-						<div class="sizes-text">
-							{#each sizes as size}
-								<span 
-									class="size-text"
-									class:selected={selectedSizes[product.id] === size}
-									onclick={() => selectSize(product.id, size)}
-									onkeydown={(e) => e.key === 'Enter' && selectSize(product.id, size)}
-									role="button"
-									tabindex="0"
-								>
-									{size}
-								</span>
-							{/each}
+	{#if loading}
+		<div class="loading">Loading products...</div>
+	{:else if products.length === 0}
+		<div class="no-products">No products available.</div>
+	{:else}
+		<div class="products-list">
+			{#each products as product}
+				<div class="product-row">
+					<img src={product.image} alt={product.name} class="product-image" />
+					<div class="product-details">
+						<div class="product-line-1">
+							<h2 class="product-name">{product.name}</h2>
+							<p class="product-price">{product.price}</p>
 						</div>
-						<span 
-							class="add-to-cart-text"
-							class:disabled={!selectedSizes[product.id]}
-							onclick={() => selectedSizes[product.id] && addToCart(product)}
-							onkeydown={(e) => e.key === 'Enter' && selectedSizes[product.id] && addToCart(product)}
-							role="button"
-							tabindex="0"
-						>
-							Add to Cart
-						</span>
+						<div class="product-line-2">
+							<div class="sizes-text">
+								{#each getSizes(product) as size}
+									<span 
+										class="size-text"
+										class:selected={selectedSizes[product.id] === size}
+										onclick={() => selectSize(product.id, size)}
+										onkeydown={(e) => e.key === 'Enter' && selectSize(product.id, size)}
+										role="button"
+										tabindex="0"
+									>
+										{size}
+									</span>
+								{/each}
+							</div>
+							<span 
+								class="add-to-cart-text"
+								class:disabled={!selectedSizes[product.id]}
+								onclick={() => selectedSizes[product.id] && addToCart(product)}
+								onkeydown={(e) => e.key === 'Enter' && selectedSizes[product.id] && addToCart(product)}
+								role="button"
+								tabindex="0"
+							>
+								Add to Cart
+							</span>
+						</div>
+						<p class="product-description">{product.description}</p>
 					</div>
-					<p class="product-description">{product.description}</p>
 				</div>
-			</div>
-		{/each}
-	</div>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style>
@@ -76,6 +110,15 @@
 		width: 100%;
 		min-height: 100vh;
 		padding: 2rem;
+	}
+
+	.loading,
+	.no-products {
+		text-align: center;
+		padding: 4rem 2rem;
+		font-family: Helvetica, Arial, sans-serif;
+		font-size: 0.75rem;
+		color: #666;
 	}
 
 	.products-list {
@@ -186,6 +229,7 @@
 		line-height: 1.6;
 		color: #666;
 		margin: 0;
+		max-width: 75%;
 	}
 
 	@media (max-width: 1024px) {
