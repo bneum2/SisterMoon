@@ -11,15 +11,15 @@ export const products: Product[] = [
 	{
 		id: '1',
 		name: 'Bella Skirt',
-		price: '90 USD',
+		price: '90',
 		image: '/BellaSkirt.png',
-		description: 'A beautiful flowing skirt perfect for any occasion',
+		description: 'Handmade lace mini skirts designed as beach coverups, re-worked from recycled vintage lace.',
 		slug: 'bella-skirt'
 	},
 	{
 		id: '2',
 		name: 'Lace Headband',
-		price: "25 USD",
+		price: "25",
 		image: '/LaceHeadband.png',
 		description: 'Delicate lace headband for an elegant touch',
 		slug: 'lace-headband'
@@ -27,7 +27,7 @@ export const products: Product[] = [
 	{
 		id: '3',
 		name: 'Perla Dress',
-		price: "150 USD",
+		price: "150",
 		image: '/PerlaDress.png',
 		description: 'Stunning pearl-inspired dress for special moments',
 		slug: 'perla-dress'
