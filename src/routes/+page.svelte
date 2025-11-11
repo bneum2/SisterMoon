@@ -22,6 +22,10 @@
 			selectedSizes[product.id] = '';
 		}
 	}
+	
+	function selectSize(productId: string, size: string) {
+		selectedSizes[productId] = size;
+	}
 </script>
 
 <div class="product-page">
@@ -40,8 +44,8 @@
 								<span 
 									class="size-text"
 									class:selected={selectedSizes[product.id] === size}
-									onclick={() => selectedSizes[product.id] = size}
-									onkeydown={(e) => e.key === 'Enter' && (selectedSizes[product.id] = size)}
+									onclick={() => selectSize(product.id, size)}
+									onkeydown={(e) => e.key === 'Enter' && selectSize(product.id, size)}
 									role="button"
 									tabindex="0"
 								>

@@ -21,15 +21,21 @@
 			if (checkoutLineElement) {
 				const rect = checkoutLineElement.getBoundingClientRect();
 				lineTop = rect.top + lineOffset;
+			} else {
+				// If element not found, set to a default value to avoid top positioning
+				lineTop = window.innerHeight - 200;
 			}
 		}
-		updateLinePosition();
+		// Wait for DOM to be ready
+		setTimeout(() => {
+			updateLinePosition();
+		}, 100);
 		// Update on scroll and resize
 		window.addEventListener('scroll', updateLinePosition);
 		window.addEventListener('resize', updateLinePosition);
 		// Update when cart changes
 		const unsubscribe = cartItems.subscribe(() => {
-			setTimeout(updateLinePosition, 0);
+			setTimeout(updateLinePosition, 100);
 		});
 		return () => {
 			window.removeEventListener('scroll', updateLinePosition);
@@ -103,7 +109,9 @@
 					</div>
 					{/each}
 					<div class="checkout-line" bind:this={checkoutLineElement}>
-						<div class="checkout-line-border" style="top: {lineTop}px"></div>
+						{#if lineTop > 0}
+							<div class="checkout-line-border" style="top: {lineTop}px"></div>
+						{/if}
 						<div class="checkout-container">
 							<a href="/checkout" class="checkout-button">
 								Checkout
