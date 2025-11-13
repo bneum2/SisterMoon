@@ -1,8 +1,10 @@
 // Shopify Storefront API client
 // This file handles communication with Shopify's Storefront API
 
-const SHOPIFY_STORE_DOMAIN = import.meta.env.PUBLIC_SHOPIFY_STORE_DOMAIN || '';
-const SHOPIFY_STOREFRONT_ACCESS_TOKEN = import.meta.env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || '';
+import { env } from '$env/dynamic/public';
+
+const SHOPIFY_STORE_DOMAIN = env.PUBLIC_SHOPIFY_STORE_DOMAIN || '';
+const SHOPIFY_STOREFRONT_ACCESS_TOKEN = env.PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN || '';
 
 export interface ShopifyProduct {
 	id: string;
@@ -42,7 +44,12 @@ export interface ShopifyProduct {
 
 export interface ShopifyProductResponse {
 	data?: {
-		products: {
+		products?: {
+			edges: Array<{
+				node: ShopifyProduct;
+			}>;
+		};
+		productListings?: {
 			edges: Array<{
 				node: ShopifyProduct;
 			}>;
@@ -57,7 +64,7 @@ export interface ShopifyProductResponse {
 	}>;
 }
 
-// GraphQL query to fetch all products
+// GraphQL query to fetch all products using products (for unauthenticated_read_products scope)
 const PRODUCTS_QUERY = `
 	query getProducts {
 		products(first: 250) {
@@ -67,7 +74,7 @@ const PRODUCTS_QUERY = `
 					title
 					handle
 					description
-					images(first: 1) {
+					images(first: 10) {
 						edges {
 							node {
 								url
@@ -104,46 +111,66 @@ const PRODUCTS_QUERY = `
 
 export async function fetchProductsFromShopify(): Promise<ShopifyProduct[]> {
 	if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
+		
 		console.warn('Shopify credentials not configured.');
-		console.warn('SHOPIFY_STORE_DOMAIN:', SHOPIFY_STORE_DOMAIN ? 'Set' : 'Missing');
-		console.warn('SHOPIFY_STOREFRONT_ACCESS_TOKEN:', SHOPIFY_STOREFRONT_ACCESS_TOKEN ? 'Set' : 'Missing');
 		return [];
 	}
 
 	try {
-		const apiVersion = '2024-01';
-		const url = `https://${SHOPIFY_STORE_DOMAIN}/api/${apiVersion}/graphql.json`;
-		console.log('Fetching from Shopify:', url);
+		// Try latest API version first, fallback to older versions if needed
+		const queryApiVersions = ['2024-07', '2024-04', '2024-01', '2023-10'];
+		let lastError: Error | null = null;
 		
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
-			},
-			body: JSON.stringify({ query: PRODUCTS_QUERY })
-		});
+		for (const apiVersion of queryApiVersions) {
+			const url = `https://${SHOPIFY_STORE_DOMAIN}/api/${apiVersion}/graphql.json`;
+			
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_ACCESS_TOKEN
+				},
+				body: JSON.stringify({ query: PRODUCTS_QUERY })
+			});
 
-		if (!response.ok) {
-			throw new Error(`Shopify API error: ${response.statusText}`);
-		}
-
-		const data: ShopifyProductResponse = await response.json();
-		
-		// Check for GraphQL errors
-		if (data.errors) {
-			console.error('Shopify GraphQL errors:', data.errors);
+			const responseData = await response.json();
+			
+			if (!response.ok || responseData.errors) {
+				console.error(`API version ${apiVersion} failed:`, response.status, response.statusText);
+				console.error('Response body:', JSON.stringify(responseData, null, 2));
+				
+				// Check for specific error types
+				if (responseData.errors) {
+					const errorMessages = responseData.errors.map((e: any) => e.message).join(', ');
+					lastError = new Error(`Shopify API error (${apiVersion}): ${errorMessages}`);
+				} else {
+					lastError = new Error(`Shopify API error (${apiVersion}): ${response.status} ${response.statusText}`);
+				}
+				// Try next version
+				continue;
+			}
+			
+			// Success! Parse the response
+			const data: ShopifyProductResponse = responseData;
+			
+			// Use products query (productListings doesn't exist in this API version)
+			const productsData = data.data?.products;
+			
+			if (productsData?.edges) {
+				const products = productsData.edges.map(edge => edge.node);
+				return products;
+			}
+			
+			console.warn('No products found in Shopify response');
+			console.warn('Response data:', JSON.stringify(data.data, null, 2));
 			return [];
 		}
 		
-		if (data.data?.products?.edges) {
-			const products = data.data.products.edges.map(edge => edge.node);
-			console.log(`Successfully fetched ${products.length} products from Shopify`);
-			return products;
+		// All versions failed
+		if (lastError) {
+			throw lastError;
 		}
-		
-		console.warn('No products found in Shopify response');
-		return [];
+		throw new Error('All API versions failed');
 	} catch (error) {
 		console.error('Error fetching products from Shopify:', error);
 		if (error instanceof Error) {
@@ -155,7 +182,9 @@ export async function fetchProductsFromShopify(): Promise<ShopifyProduct[]> {
 
 // Convert Shopify product to our Product format
 export function convertShopifyProduct(shopifyProduct: ShopifyProduct) {
-	const firstImage = shopifyProduct.images.edges[0]?.node?.url || '';
+	// Get all images
+	const allImages = shopifyProduct.images.edges.map(edge => edge.node.url).filter(Boolean);
+	const firstImage = allImages[0] || '';
 	const firstVariant = shopifyProduct.variants.edges[0]?.node;
 	const price = firstVariant?.price?.amount || '0';
 	
@@ -166,9 +195,10 @@ export function convertShopifyProduct(shopifyProduct: ShopifyProduct) {
 	const sizes = sizeOption?.values || [];
 
 	// Convert variants to our format
+	// Use full GID for checkout (Shopify requires full GID format)
 	const variants = shopifyProduct.variants.edges.map(edge => ({
-		id: edge.node.id.split('/').pop() || edge.node.id,
-		shopifyId: edge.node.id,
+		id: edge.node.id, // Full GID for checkout: "gid://shopify/ProductVariant/123456789"
+		shortId: edge.node.id.split('/').pop() || edge.node.id, // Short ID for display
 		title: edge.node.title,
 		price: edge.node.price,
 		availableForSale: edge.node.availableForSale,
@@ -180,7 +210,8 @@ export function convertShopifyProduct(shopifyProduct: ShopifyProduct) {
 		shopifyId: shopifyProduct.id,
 		name: shopifyProduct.title,
 		price: price,
-		image: firstImage,
+		image: firstImage, // For backward compatibility
+		images: allImages, // All images for scrolling
 		description: shopifyProduct.description || '',
 		slug: shopifyProduct.handle,
 		variants: variants,

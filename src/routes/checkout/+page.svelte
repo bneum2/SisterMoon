@@ -2,23 +2,58 @@
 	import { cart, cartItems, cartTotal } from '$lib/stores/cart';
 	import { goto } from '$app/navigation';
 	
-	// Form state
-	let name = $state('');
-	let email = $state('');
-	let address = $state('');
-	let city = $state('');
-	let zipCode = $state('');
-	let cardNumber = $state('');
-	let expiryDate = $state('');
-	let cvv = $state('');
+	let loading = $state(false);
+	let error = $state<string | null>(null);
 	
-	function handleCheckout(e: SubmitEvent) {
-		e.preventDefault();
-		// Here you would typically send the order to a backend
-		// For now, just clear the cart and redirect
-		cart.clear();
-		alert('Order placed successfully!');
-		goto('/');
+	async function handleCheckout() {
+		if ($cartItems.length === 0) {
+			return;
+		}
+
+		// Filter out items without variant IDs (they can't be checked out)
+		const itemsWithVariants = $cartItems.filter(item => item.variantId);
+		
+		if (itemsWithVariants.length === 0) {
+			error = 'No valid items in cart. Please ensure all items have variants.';
+			return;
+		}
+
+		loading = true;
+		error = null;
+
+		try {
+			// Prepare line items for Shopify checkout
+			const lineItems = itemsWithVariants.map(item => ({
+				variantId: item.variantId!,
+				quantity: item.quantity
+			}));
+
+			// Create checkout via API
+			const response = await fetch('/api/checkout', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({ lineItems })
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || 'Failed to create checkout');
+			}
+
+			if (data.checkoutUrl) {
+				// Redirect to Shopify checkout
+				window.location.href = data.checkoutUrl;
+			} else {
+				throw new Error('No checkout URL received');
+			}
+		} catch (err) {
+			console.error('Checkout error:', err);
+			error = err instanceof Error ? err.message : 'Failed to proceed to checkout';
+			loading = false;
+		}
 	}
 </script>
 
@@ -34,58 +69,26 @@
 		{:else}
 			<div class="checkout-content">
 				<div class="checkout-form-section">
-					<h2 class="section-title">Shipping Information</h2>
-					<form class="checkout-form" onsubmit={handleCheckout}>
-						<div class="form-group">
-							<label for="name">Full Name</label>
-							<input type="text" id="name" bind:value={name} required />
+					<h2 class="section-title">Checkout</h2>
+					
+					{#if error}
+						<div class="error-message">
+							{error}
 						</div>
-						
-						<div class="form-group">
-							<label for="email">Email</label>
-							<input type="email" id="email" bind:value={email} required />
-						</div>
-						
-						<div class="form-group">
-							<label for="address">Address</label>
-							<input type="text" id="address" bind:value={address} required />
-						</div>
-						
-						<div class="form-row">
-							<div class="form-group">
-								<label for="city">City</label>
-								<input type="text" id="city" bind:value={city} required />
-							</div>
-							
-							<div class="form-group">
-								<label for="zip">Zip Code</label>
-								<input type="text" id="zip" bind:value={zipCode} required />
-							</div>
-						</div>
-						
-						<h2 class="section-title">Payment Information</h2>
-						
-						<div class="form-group">
-							<label for="card">Card Number</label>
-							<input type="text" id="card" bind:value={cardNumber} placeholder="1234 5678 9012 3456" required />
-						</div>
-						
-						<div class="form-row">
-							<div class="form-group">
-								<label for="expiry">Expiry Date</label>
-								<input type="text" id="expiry" bind:value={expiryDate} placeholder="MM/YY" required />
-							</div>
-							
-							<div class="form-group">
-								<label for="cvv">CVV</label>
-								<input type="text" id="cvv" bind:value={cvv} placeholder="123" required />
-							</div>
-						</div>
-						
-						<button type="submit" class="submit-button">
-							Place Order
-						</button>
-					</form>
+					{/if}
+					
+					<p class="checkout-description">
+						Click the button below to complete your purchase securely through Shopify.
+					</p>
+					
+					<button 
+						type="button" 
+						class="submit-button"
+						onclick={handleCheckout}
+						disabled={loading || $cartItems.length === 0}
+					>
+						{loading ? 'Processing...' : 'Proceed to Checkout'}
+					</button>
 				</div>
 				
 				<div class="order-summary">
@@ -253,8 +256,31 @@
 		margin-top: 1rem;
 	}
 
-	.submit-button:hover {
+	.submit-button:hover:not(:disabled) {
 		background: #333;
+	}
+
+	.submit-button:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	.checkout-description {
+		font-family: Helvetica, Arial, sans-serif;
+		font-size: 0.75rem;
+		color: #666;
+		margin-bottom: 2rem;
+		line-height: 1.6;
+	}
+
+	.error-message {
+		background: #fee;
+		border: 1px solid #fcc;
+		color: #c33;
+		padding: 1rem;
+		margin-bottom: 1.5rem;
+		font-family: Helvetica, Arial, sans-serif;
+		font-size: 0.75rem;
 	}
 
 	.order-summary {

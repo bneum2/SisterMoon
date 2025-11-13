@@ -212,17 +212,11 @@
 		font-size: 0.75rem;
 		font-weight: normal;
 		letter-spacing: 0em;
-		margin-bottom: 0.5rem;
+		margin-bottom: 1rem;
 		text-decoration: underline;
 		color: black;
 	}
 
-	.empty-cart-message {
-		font-family: Helvetica, Arial, sans-serif;
-		font-size: 0.75rem;
-		color: #666;
-		margin: 0;
-	}
 
 	.cart-item {
 		display: flex;

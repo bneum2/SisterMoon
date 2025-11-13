@@ -3,6 +3,7 @@ import { writable, derived, get } from 'svelte/store';
 export interface CartItem {
 	id: string;
 	productId: string;
+	variantId?: string; // Shopify variant ID for checkout
 	name: string;
 	price: string;
 	image: string;
@@ -22,7 +23,7 @@ class CartStore {
 		return this.items;
 	}
 
-	addItem(productId: string, name: string, price: string, image: string, size?: string) {
+	addItem(productId: string, name: string, price: string, image: string, size?: string, variantId?: string) {
 		itemsStore.update(items => {
 			const existingItem = items.find(
 				item => item.productId === productId && item.size === size
@@ -35,6 +36,7 @@ class CartStore {
 				return [...items, {
 					id: `${productId}-${size || 'default'}-${Date.now()}`,
 					productId,
+					variantId,
 					name,
 					price,
 					image,
