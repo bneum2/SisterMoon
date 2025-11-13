@@ -357,36 +357,46 @@
 	
 	function addToCart(product: Product) {
 		const selectedSize = selectedSizes[product.id];
-		if (selectedSize && isSizeInStock(product, selectedSize)) {
-			// Find the variant ID for the selected size
-			let variantId: string | undefined;
-			if (product.variants) {
-				const variant = product.variants.find(v => {
-					const sizeOption = v.selectedOptions.find(opt => 
-						opt.name.toLowerCase() === 'size' || opt.name.toLowerCase() === 'sizes'
-					);
-					return sizeOption?.value === selectedSize;
-				});
-				variantId = variant?.id;
-			}
-			
-			cart.addItem(
-				product.id,
-				product.name,
-				product.price,
-				product.image,
-				selectedSize,
-				variantId
-			);
-			// Clear selected size so user can add another size/item
-			selectedSizes[product.id] = '';
+		if (!selectedSize) {
+			return;
 		}
+		if (!isSizeInStock(product, selectedSize)) {
+			return;
+		}
+		
+		// Find the variant ID for the selected size
+		let variantId: string | undefined;
+		if (product.variants) {
+			const variant = product.variants.find(v => {
+				const sizeOption = v.selectedOptions.find(opt => 
+					opt.name.toLowerCase() === 'size' || opt.name.toLowerCase() === 'sizes'
+				);
+				return sizeOption?.value === selectedSize;
+			});
+			variantId = variant?.id;
+		}
+		
+		cart.addItem(
+			product.id,
+			product.name,
+			product.price,
+			product.image,
+			selectedSize,
+			variantId
+		);
+		
+		// Clear selected size so user can add another size/item
+		selectedSizes[product.id] = '';
+		// Force reactivity update
+		selectedSizes = { ...selectedSizes };
 	}
 	
 	function selectSize(productId: string, size: string, product: Product) {
 		// Only allow selecting if in stock
 		if (isSizeInStock(product, size)) {
 			selectedSizes[productId] = size;
+			// Force reactivity update
+			selectedSizes = { ...selectedSizes };
 		}
 	}
 </script>
@@ -446,8 +456,16 @@
 										class="size-text"
 										class:selected={selectedSizes[product.id] === size}
 										class:out-of-stock={!inStock}
-										onclick={() => selectSize(product.id, size, product)}
-										onkeydown={(e) => e.key === 'Enter' && selectSize(product.id, size, product)}
+										onclick={() => {
+											if (inStock) {
+												selectSize(product.id, size, product);
+											}
+										}}
+										onkeydown={(e) => {
+											if (e.key === 'Enter' && inStock) {
+												selectSize(product.id, size, product);
+											}
+										}}
 										role="button"
 										tabindex={inStock ? 0 : -1}
 										aria-disabled={!inStock}
@@ -456,16 +474,31 @@
 									</span>
 								{/each}
 							</div>
-							<span 
+							<button 
 								class="add-to-cart-text"
-								class:disabled={!selectedSizes[product.id] || !isSizeInStock(product, selectedSizes[product.id])}
-								onclick={() => selectedSizes[product.id] && isSizeInStock(product, selectedSizes[product.id]) && addToCart(product)}
-								onkeydown={(e) => e.key === 'Enter' && selectedSizes[product.id] && isSizeInStock(product, selectedSizes[product.id]) && addToCart(product)}
-								role="button"
-								tabindex="0"
+								onclick={(e) => {
+									e.preventDefault();
+									e.stopPropagation();
+									
+									const selectedSize = selectedSizes[product.id];
+									if (selectedSize && isSizeInStock(product, selectedSize)) {
+										addToCart(product);
+									}
+								}}
+								onkeydown={(e) => {
+									if (e.key === 'Enter') {
+										e.preventDefault();
+										const selectedSize = selectedSizes[product.id];
+										if (selectedSize && isSizeInStock(product, selectedSize)) {
+											addToCart(product);
+										}
+									}
+								}}
+								disabled={!selectedSizes[product.id] || !isSizeInStock(product, selectedSizes[product.id])}
+								type="button"
 							>
 								Add to Cart
-							</span>
+							</button>
 						</div>
 						{#if product.description}
 							{@const sections = parseDescription(product.description)}
@@ -658,6 +691,9 @@
 		transition: opacity 0.3s ease;
 		text-decoration: none;
 		position: relative;
+		-webkit-tap-highlight-color: transparent;
+		touch-action: manipulation;
+		user-select: none;
 	}
 
 	.size-text:hover:not(.out-of-stock) {
@@ -682,19 +718,28 @@
 		font-family: Helvetica, Arial, sans-serif;
 		font-size: 0.75rem;
 		color: black;
+		background: transparent;
+		border: none;
+		padding: 0;
+		margin: 0;
+		z-index: 10000;
 		cursor: pointer;
 		text-decoration: underline;
 		transition: opacity 0.3s ease;
+		-webkit-tap-highlight-color: transparent;
+		touch-action: manipulation;
+		user-select: none;
 	}
 
-	.add-to-cart-text:hover:not(.disabled) {
+	.add-to-cart-text:hover:not(:disabled) {
 		opacity: 0.6;
 	}
 
-	.add-to-cart-text.disabled {
+	.add-to-cart-text:disabled {
 		opacity: 0.3;
 		cursor: not-allowed;
 		text-decoration: none;
+		pointer-events: none;
 	}
 
 	.product-description {
@@ -793,6 +838,30 @@
 
 		.product-image {
 			width: 100%;
+		}
+
+		.product-line-1 {
+			justify-content: space-between;
+		}
+
+		.product-name {
+			flex: 1;
+		}
+
+		.product-price {
+			margin-left: auto;
+		}
+
+		.product-description-sections {
+			max-width: 100%;
+		}
+
+		.product-description-intro {
+			max-width: 100%;
+		}
+
+		.product-description {
+			max-width: 100%;
 		}
 	}
 </style>

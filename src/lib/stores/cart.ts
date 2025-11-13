@@ -25,13 +25,18 @@ class CartStore {
 
 	addItem(productId: string, name: string, price: string, image: string, size?: string, variantId?: string) {
 		itemsStore.update(items => {
-			const existingItem = items.find(
+			const existingItemIndex = items.findIndex(
 				item => item.productId === productId && item.size === size
 			);
 
-			if (existingItem) {
-				existingItem.quantity += 1;
-				return [...items];
+			if (existingItemIndex !== -1) {
+				// Create a new array with updated quantity
+				const newItems = [...items];
+				newItems[existingItemIndex] = {
+					...newItems[existingItemIndex],
+					quantity: newItems[existingItemIndex].quantity + 1
+				};
+				return newItems;
 			} else {
 				return [...items, {
 					id: `${productId}-${size || 'default'}-${Date.now()}`,

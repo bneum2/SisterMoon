@@ -59,12 +59,11 @@
 
 <div class="checkout-page">
 	<div class="checkout-container">
-		<h1 class="checkout-title">Checkout</h1>
 		
 		{#if $cartItems.length === 0}
 			<div class="empty-cart">
 				<p>Your cart is empty.</p>
-				<a href="/" class="back-button">Continue Shopping</a>
+				<a href="/" class="continue-shopping-text">Continue Shopping</a>
 			</div>
 		{:else}
 			<div class="checkout-content">
@@ -78,17 +77,19 @@
 					{/if}
 					
 					<p class="checkout-description">
-						Click the button below to complete your purchase securely through Shopify.
+						Click below to complete your purchase securely through Shopify.
 					</p>
 					
-					<button 
-						type="button" 
-						class="submit-button"
-						onclick={handleCheckout}
-						disabled={loading || $cartItems.length === 0}
+					<span 
+						class="checkout-text"
+						class:disabled={loading || $cartItems.length === 0}
+						onclick={() => !loading && $cartItems.length > 0 && handleCheckout()}
+						onkeydown={(e) => e.key === 'Enter' && !loading && $cartItems.length > 0 && handleCheckout()}
+						role="button"
+						tabindex="0"
 					>
-						{loading ? 'Processing...' : 'Proceed to Checkout'}
-					</button>
+						{loading ? 'Processing...' : 'Checkout'}
+					</span>
 				</div>
 				
 				<div class="order-summary">
@@ -141,16 +142,6 @@
 		margin: 0 auto;
 	}
 
-	.checkout-title {
-		font-family: Helvetica, Arial, sans-serif;
-		font-size: 0.75rem;
-		font-weight: normal;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: black;
-		margin-bottom: 2rem;
-	}
-
 	.empty-cart {
 		text-align: center;
 		padding: 4rem 2rem;
@@ -163,21 +154,19 @@
 		margin-bottom: 2rem;
 	}
 
-	.back-button {
-		display: inline-block;
-		padding: 1rem 2rem;
-		background: black;
-		color: white;
-		text-decoration: none;
+	.continue-shopping-text {
 		font-family: Helvetica, Arial, sans-serif;
 		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		transition: background 0.3s ease;
+		color: black;
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		text-decoration-thickness: 1px;
+		transition: opacity 0.3s ease;
+		display: inline-block;
 	}
 
-	.back-button:hover {
-		background: #333;
+	.continue-shopping-text:hover {
+		opacity: 0.7;
 	}
 
 	.checkout-content {
@@ -190,8 +179,6 @@
 		font-family: Helvetica, Arial, sans-serif;
 		font-size: 0.75rem;
 		font-weight: normal;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
 		color: black;
 		margin-bottom: 1.5rem;
 		margin-top: 2rem;
@@ -201,75 +188,33 @@
 		margin-top: 0;
 	}
 
-	.checkout-form {
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
-
-	.form-group {
-		display: flex;
-		flex-direction: column;
-		gap: 0.5rem;
-	}
-
-	.form-group label {
-		font-family: Helvetica, Arial, sans-serif;
-		font-size: 0.75rem;
-		font-weight: normal;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: black;
-	}
-
-	.form-group input {
-		padding: 0.75rem;
-		border: 1px solid black;
-		background: white;
+	.checkout-text {
 		font-family: Helvetica, Arial, sans-serif;
 		font-size: 0.75rem;
 		color: black;
-	}
-
-	.form-group input:focus {
-		outline: none;
-		border-color: #333;
-	}
-
-	.form-row {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1rem;
-	}
-
-	.submit-button {
-		padding: 1rem 2rem;
-		background: black;
-		color: white;
-		border: none;
-		font-family: Helvetica, Arial, sans-serif;
-		font-size: 0.75rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
 		cursor: pointer;
-		transition: background 0.3s ease;
-		margin-top: 1rem;
+		text-decoration: underline;
+		text-underline-offset: 0.2em;
+		text-decoration-thickness: 1px;
+		transition: opacity 0.3s ease;
+		margin-top: 0rem;
+		display: inline-block;
 	}
 
-	.submit-button:hover:not(:disabled) {
-		background: #333;
+	.checkout-text:hover:not(.disabled) {
+		opacity: 0.7;
 	}
 
-	.submit-button:disabled {
-		opacity: 0.5;
+	.checkout-text.disabled {
+		opacity: 0.3;
 		cursor: not-allowed;
+		text-decoration-color: #999;
 	}
 
 	.checkout-description {
 		font-family: Helvetica, Arial, sans-serif;
 		font-size: 0.75rem;
-		color: #666;
-		margin-bottom: 2rem;
+		margin-bottom: 1rem;
 		line-height: 1.6;
 	}
 
@@ -284,7 +229,6 @@
 	}
 
 	.order-summary {
-		background: #f8f8f8;
 		padding: 2rem;
 		height: fit-content;
 		position: sticky;

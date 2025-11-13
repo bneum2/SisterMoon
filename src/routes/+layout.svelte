@@ -61,7 +61,7 @@
 			</a>
 		</div>
 		<div class="mobile-cart">
-			<span class="cart-link">Cart ({$cartItemCount})</span>
+			<a href="/checkout" class="cart-link">Cart ({$cartItemCount})</a>
 		</div>
 	</header>
 	
@@ -91,7 +91,12 @@
 					{#each $cartItems as item (item.id)}
 						<div class="cart-item" transition:slide={{ duration: 300 }}>
 							<div class="cart-item-details">
-								<p class="cart-item-name">{item.name}</p>
+								<p class="cart-item-name">
+									{item.name}
+									{#if item.quantity > 1}
+										<span class="cart-item-quantity">{item.quantity}</span>
+									{/if}
+								</p>
 								{#if item.size}
 									<p class="cart-item-size">{item.size}</p>
 								{/if}
@@ -113,7 +118,7 @@
 							<div class="checkout-line-border" style="top: {lineTop}px"></div>
 						{/if}
 						<div class="checkout-container">
-							<a href="/checkout" class="checkout-button">
+							<a href="/checkout" class="checkout-text">
 								Checkout
 							</a>
 							<p class="total-amount">{$cartTotal}</p>
@@ -244,6 +249,16 @@
 		font-weight: normal;
 		color: black;
 		margin: 0;
+		display: flex;
+		align-items: baseline;
+		gap: 0.25rem;
+	}
+
+	.cart-item-quantity {
+		font-family: Helvetica, Arial, sans-serif;
+		font-size: 0.75rem;
+		font-weight: normal;
+		color: #666;
 	}
 
 	.cart-item-size {
@@ -281,9 +296,6 @@
 		margin-right: -0.25rem;
 	}
 
-	.remove-item-button:hover {
-		color: black;
-	}
 
 	.total-amount {
 		font-family: Helvetica, Arial, sans-serif;
@@ -320,20 +332,19 @@
 		padding-top: 1rem;
 	}
 
-	.checkout-button {
-		padding: 0rem;
-		color: rgb(0, 0, 0);
-		text-align: left;
-		text-decoration: none;
+	.checkout-text {
 		font-family: Helvetica, Arial, sans-serif;
 		font-size: 0.75rem;
+		color: black;
 		text-decoration: underline;
-		letter-spacing: 0.0em;
-		transition: background 0.3s ease;
+		text-underline-offset: 0.2em;
+		text-decoration-thickness: 1px;
+		cursor: pointer;
+		transition: opacity 0.3s ease;
 	}
 
-	.checkout-button:hover {
-		background: #333;
+	.checkout-text:hover {
+		opacity: 0.7;
 	}
 
 	/* Main Content */
