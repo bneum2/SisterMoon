@@ -109,7 +109,7 @@
 								>
 									<X size={14} />
 								</button>
-								<p class="cart-item-price">{item.price}</p>
+								<p class="cart-item-price">{Math.round(parseFloat(item.price.replace(' USD', '').replace('$', '')))} </p>
 							</div>
 					</div>
 					{/each}
@@ -121,7 +121,7 @@
 							<a href="/checkout" class="checkout-text">
 								Checkout
 							</a>
-							<p class="total-amount">{$cartTotal}</p>
+							<p class="total-amount">{Math.round($cartTotal)} USD</p>
 						</div>
 					</div>
 

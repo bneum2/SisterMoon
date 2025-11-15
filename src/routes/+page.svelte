@@ -446,7 +446,7 @@
 					<div class="product-details">
 						<div class="product-line-1">
 							<h2 class="product-name">{product.name}</h2>
-							<p class="product-price">{product.price}</p>
+							<p class="product-price">{Math.round(parseFloat(product.price))} USD</p>
 						</div>
 						<div class="product-line-2">
 							<div class="sizes-text">
@@ -524,6 +524,17 @@
 													</button>
 												{/if}
 											{/each}
+											{#if product.sizeChart}
+												{@const isExpanded = isSectionExpanded(product.id, 'Size Chart')}
+												<button
+													class="description-section-header"
+													class:active={isExpanded}
+													onclick={() => toggleSection(product.id, 'Size Chart')}
+													aria-expanded={isExpanded}
+												>
+													<span class="section-title">Size Chart</span>
+												</button>
+											{/if}
 										</div>
 										<div class="description-section-content-wrapper">
 											{#each sections as section}
@@ -536,13 +547,63 @@
 													{/if}
 												{/if}
 											{/each}
+											{#if product.sizeChart}
+												{@const isExpanded = isSectionExpanded(product.id, 'Size Chart')}
+												{#if isExpanded}
+													<div class="description-section-content">
+														{@html product.sizeChart.replace(/\n/g, '<br>')}
+													</div>
+												{/if}
+											{/if}
 										</div>
 									</div>
 								</div>
 							{:else if sections.length === 1}
 								<p class="product-description">{sections[0].content}</p>
+								{#if product.sizeChart}
+									<div class="description-sections-container">
+										<div class="description-section-headers">
+											<button
+												class="description-section-header"
+												class:active={isSectionExpanded(product.id, 'Size Chart')}
+												onclick={() => toggleSection(product.id, 'Size Chart')}
+												aria-expanded={isSectionExpanded(product.id, 'Size Chart')}
+											>
+												<span class="section-title">Size Chart</span>
+											</button>
+										</div>
+										<div class="description-section-content-wrapper">
+											{#if isSectionExpanded(product.id, 'Size Chart')}
+												<div class="description-section-content">
+													{@html product.sizeChart.replace(/\n/g, '<br>')}
+												</div>
+											{/if}
+										</div>
+									</div>
+								{/if}
 							{:else}
 								<p class="product-description">{product.description}</p>
+								{#if product.sizeChart}
+									<div class="description-sections-container">
+										<div class="description-section-headers">
+											<button
+												class="description-section-header"
+												class:active={isSectionExpanded(product.id, 'Size Chart')}
+												onclick={() => toggleSection(product.id, 'Size Chart')}
+												aria-expanded={isSectionExpanded(product.id, 'Size Chart')}
+											>
+												<span class="section-title">Size Chart</span>
+											</button>
+										</div>
+										<div class="description-section-content-wrapper">
+											{#if isSectionExpanded(product.id, 'Size Chart')}
+												<div class="description-section-content">
+													{@html product.sizeChart.replace(/\n/g, '<br>')}
+												</div>
+											{/if}
+										</div>
+									</div>
+								{/if}
 							{/if}
 						{/if}
 					</div>

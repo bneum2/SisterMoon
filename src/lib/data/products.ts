@@ -21,4 +21,5 @@ export interface Product {
 		}>;
 	}>;
 	sizes?: string[];
+	sizeChart?: string; // Size chart metafield content
 }

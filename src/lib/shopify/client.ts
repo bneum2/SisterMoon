@@ -40,6 +40,17 @@ export interface ShopifyProduct {
 		name: string;
 		values: string[];
 	}>;
+	metafields?: Array<{
+		namespace: string;
+		key: string;
+		value: string;
+		reference?: {
+			image?: {
+				url: string;
+				altText: string | null;
+			};
+		};
+	}>;
 }
 
 export interface ShopifyProductResponse {
@@ -102,6 +113,26 @@ const PRODUCTS_QUERY = `
 					options {
 						name
 						values
+					}
+					metafields(identifiers: [
+						{ namespace: "custom", key: "size_chart" },
+						{ namespace: "custom", key: "sizechart" },
+						{ namespace: "custom", key: "size-chart" },
+						{ namespace: "global", key: "size_chart" },
+						{ namespace: "global", key: "sizechart" },
+						{ namespace: "global", key: "size-chart" }
+					]) {
+						namespace
+						key
+						value
+						reference {
+							... on MediaImage {
+								image {
+									url
+									altText
+								}
+							}
+						}
 					}
 				}
 			}
@@ -180,13 +211,20 @@ export async function fetchProductsFromShopify(): Promise<ShopifyProduct[]> {
 	}
 }
 
+// Helper function to format price without decimals
+function formatPrice(price: string): string {
+	const num = parseFloat(price);
+	if (isNaN(num)) return price;
+	return Math.round(num).toString();
+}
+
 // Convert Shopify product to our Product format
 export function convertShopifyProduct(shopifyProduct: ShopifyProduct) {
 	// Get all images
 	const allImages = shopifyProduct.images.edges.map(edge => edge.node.url).filter(Boolean);
 	const firstImage = allImages[0] || '';
 	const firstVariant = shopifyProduct.variants.edges[0]?.node;
-	const price = firstVariant?.price?.amount || '0';
+	const price = formatPrice(firstVariant?.price?.amount || '0');
 	
 	// Extract size options if available
 	const sizeOption = shopifyProduct.options.find(opt => 
@@ -205,6 +243,37 @@ export function convertShopifyProduct(shopifyProduct: ShopifyProduct) {
 		selectedOptions: edge.node.selectedOptions
 	}));
 
+	// Extract size chart from metafields
+	// Common metafield keys: 'size_chart', 'sizechart', 'size-chart'
+	let sizeChart: string | undefined;
+	if (shopifyProduct.metafields && shopifyProduct.metafields.length > 0) {
+		for (const metafield of shopifyProduct.metafields) {
+			// Skip null metafields (they don't exist)
+			if (!metafield || !metafield.key || !metafield.namespace) {
+				continue;
+			}
+			
+			const key = metafield.key.toLowerCase();
+			const namespace = metafield.namespace.toLowerCase();
+			
+			// Check for size chart in various formats
+			if (
+				(key.includes('size') && key.includes('chart')) ||
+				(namespace.includes('size') && namespace.includes('chart')) ||
+				key === 'size_chart' || key === 'sizechart' || key === 'size-chart'
+			) {
+				// If it's a media image reference, get the image URL
+				if (metafield.reference?.image?.url) {
+					sizeChart = `<img src="${metafield.reference.image.url}" alt="${metafield.reference.image.altText || 'Size chart'}" style="max-width: 100%; height: auto;" />`;
+				} else if (metafield.value) {
+					// Otherwise use the value directly (could be HTML or text)
+					sizeChart = metafield.value;
+				}
+				break;
+			}
+		}
+	}
+
 	return {
 		id: shopifyProduct.id.split('/').pop() || shopifyProduct.id,
 		shopifyId: shopifyProduct.id,
@@ -215,7 +284,8 @@ export function convertShopifyProduct(shopifyProduct: ShopifyProduct) {
 		description: shopifyProduct.description || '',
 		slug: shopifyProduct.handle,
 		variants: variants,
-		sizes: sizes
+		sizes: sizes,
+		sizeChart: sizeChart
 	};
 }
 

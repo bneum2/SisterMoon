@@ -105,7 +105,7 @@
 									{/if}
 									<p class="summary-quantity">Qty: {item.quantity}</p>
 								</div>
-								<p class="summary-price">${(parseFloat(item.price.replace(' USD', '').replace('$', '')) * item.quantity).toFixed(2)}</p>
+								<p class="summary-price">${Math.round(parseFloat(item.price.replace(' USD', '').replace('$', '')) * item.quantity)}</p>
 							</div>
 						{/each}
 					</div>
@@ -113,15 +113,15 @@
 					<div class="summary-total">
 						<div class="total-line">
 							<span>Subtotal</span>
-							<span>${$cartTotal.toFixed(2)}</span>
+							<span>${Math.round($cartTotal)}</span>
 						</div>
 						<div class="total-line">
 							<span>Shipping</span>
-							<span>{$cartTotal > 100 ? 'Free' : '$10.00'}</span>
+							<span>{$cartTotal > 100 ? 'Free' : '$10'}</span>
 						</div>
 						<div class="total-line final">
 							<span>Total</span>
-							<span>${($cartTotal + ($cartTotal > 100 ? 0 : 10)).toFixed(2)}</span>
+							<span>${Math.round($cartTotal + ($cartTotal > 100 ? 0 : 10))}</span>
 						</div>
 					</div>
 				</div>
