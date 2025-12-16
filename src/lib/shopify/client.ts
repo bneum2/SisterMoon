@@ -142,9 +142,22 @@ const PRODUCTS_QUERY = `
 
 export async function fetchProductsFromShopify(): Promise<ShopifyProduct[]> {
 	if (!SHOPIFY_STORE_DOMAIN || !SHOPIFY_STOREFRONT_ACCESS_TOKEN) {
-		
 		console.warn('Shopify credentials not configured.');
-		return [];
+		console.warn('SHOPIFY_STORE_DOMAIN:', SHOPIFY_STORE_DOMAIN ? 'set' : 'missing');
+		console.warn('SHOPIFY_STOREFRONT_ACCESS_TOKEN:', SHOPIFY_STOREFRONT_ACCESS_TOKEN ? 'set' : 'missing');
+		throw new Error('Shopify credentials not configured. Please set PUBLIC_SHOPIFY_STORE_DOMAIN and PUBLIC_SHOPIFY_STOREFRONT_ACCESS_TOKEN environment variables.');
+	}
+
+	// Validate store domain format
+	let storeDomain = SHOPIFY_STORE_DOMAIN.trim();
+	// Remove https:// if present
+	storeDomain = storeDomain.replace(/^https?:\/\//, '');
+	// Remove trailing slash
+	storeDomain = storeDomain.replace(/\/$/, '');
+	
+	// Check if domain looks valid (should be something.myshopify.com or a custom domain)
+	if (!storeDomain.includes('.')) {
+		throw new Error(`Invalid Shopify store domain format: "${storeDomain}". Should be like "yourstore.myshopify.com" or your custom domain.`);
 	}
 
 	try {
@@ -153,7 +166,7 @@ export async function fetchProductsFromShopify(): Promise<ShopifyProduct[]> {
 		let lastError: Error | null = null;
 		
 		for (const apiVersion of queryApiVersions) {
-			const url = `https://${SHOPIFY_STORE_DOMAIN}/api/${apiVersion}/graphql.json`;
+			const url = `https://${storeDomain}/api/${apiVersion}/graphql.json`;
 			
 			const response = await fetch(url, {
 				method: 'POST',
@@ -163,6 +176,23 @@ export async function fetchProductsFromShopify(): Promise<ShopifyProduct[]> {
 				},
 				body: JSON.stringify({ query: PRODUCTS_QUERY })
 			});
+
+			// Check content type before parsing
+			const contentType = response.headers.get('content-type') || '';
+			if (!contentType.includes('application/json')) {
+				// Response is not JSON, likely an HTML error page
+				const textResponse = await response.text();
+				console.error(`API version ${apiVersion} returned non-JSON response (${contentType})`);
+				console.error('Response preview:', textResponse.substring(0, 500));
+				
+				// Check if it's an HTML error page
+				if (textResponse.trim().toLowerCase().startsWith('<!doctype') || textResponse.trim().toLowerCase().startsWith('<html')) {
+					lastError = new Error(`Shopify API returned HTML error page. This usually means: 1) Invalid store domain (${storeDomain}), 2) Invalid API version, or 3) Invalid credentials. Status: ${response.status}. Make sure your store domain is in the format "yourstore.myshopify.com" (without https://).`);
+				} else {
+					lastError = new Error(`Shopify API returned unexpected content type: ${contentType}. Status: ${response.status}`);
+				}
+				continue;
+			}
 
 			const responseData = await response.json();
 			
@@ -206,7 +236,12 @@ export async function fetchProductsFromShopify(): Promise<ShopifyProduct[]> {
 		console.error('Error fetching products from Shopify:', error);
 		if (error instanceof Error) {
 			console.error('Error message:', error.message);
+			// Re-throw credential errors so they can be handled properly
+			if (error.message.includes('credentials not configured')) {
+				throw error;
+			}
 		}
+		// For other errors, return empty array (API failures, etc.)
 		return [];
 	}
 }

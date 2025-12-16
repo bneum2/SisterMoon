@@ -311,16 +311,24 @@
 	onMount(async () => {
 		try {
 			const response = await fetch('/api/products');
+			const data = await response.json();
+			
 			if (response.ok) {
-				const fetchedProducts = await response.json();
-				products = fetchedProducts;
+				// Check if response is an error object
+				if (data.error) {
+					console.error('API returned error:', data.error);
+					products = [];
+				} else {
+					products = Array.isArray(data) ? data : [];
+				}
 			} else {
 				console.error('Failed to fetch products. Status:', response.status);
-				const errorText = await response.text();
-				console.error('Error response:', errorText);
+				console.error('Error response:', data);
+				products = [];
 			}
 		} catch (error) {
 			console.error('Error loading products:', error);
+			products = [];
 		} finally {
 			loading = false;
 		}
@@ -419,7 +427,7 @@
 								onclick={() => productImageIndices[product.id] = (currentImageIndex - 1 + productImages.length) % productImages.length}
 								aria-label="Previous image"
 							>
-								‹
+								<img src="/arrow-chevron-left.svg" alt="Previous" class="arrow-icon" />
 							</button>
 						{/if}
 						<div class="product-images-wrapper">
@@ -439,7 +447,7 @@
 								onclick={() => productImageIndices[product.id] = (currentImageIndex + 1) % productImages.length}
 								aria-label="Next image"
 							>
-								›
+								<img src="/arrow-chevron-right.svg" alt="Next" class="arrow-icon" />
 							</button>
 						{/if}
 					</div>
@@ -657,11 +665,13 @@
 	.product-images-wrapper {
 		position: relative;
 		width: 100%;
+		aspect-ratio: 1 / 1;
+		overflow: hidden;
 	}
 
 	.product-image {
 		width: 100%;
-		height: auto;
+		height: 100%;
 		display: block;
 		object-fit: cover;
 		position: absolute;
@@ -672,7 +682,6 @@
 	}
 
 	.product-image.active {
-		position: relative;
 		opacity: 1;
 	}
 
@@ -688,12 +697,16 @@
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
-		font-size: 32px;
-		font-weight: normal;
 		color: black;
 		z-index: 10;
 		opacity: 0;
 		transition: opacity 0.2s ease;
+	}
+
+	.image-nav-button .arrow-icon {
+		width: 24px;
+		height: 24px;
+		display: block;
 	}
 
 	.image-nav-prev {
@@ -760,7 +773,7 @@
 	.size-text:hover:not(.out-of-stock) {
 		opacity: 0.6;
 	}
-
+	
 	.size-text.selected {
 		text-decoration: underline;
 		text-underline-offset: 0.2em;
