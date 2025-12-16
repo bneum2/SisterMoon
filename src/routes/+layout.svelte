@@ -118,7 +118,7 @@
 							<div class="checkout-line-border" style="top: {lineTop}px"></div>
 						{/if}
 						<div class="checkout-container">
-							<a href="/checkout" class="checkout-text">
+							<a href="/checkout" class="checkout-text" data-sveltekit-preload-data="hover">
 								Checkout
 							</a>
 							<p class="total-amount">{Math.round($cartTotal)} USD</p>

@@ -49,6 +49,13 @@ export async function createCheckout(lineItems: CheckoutLineItem[]): Promise<str
 		throw new Error('Cannot create checkout with empty cart');
 	}
 
+	// Validate and clean store domain format
+	let storeDomain = SHOPIFY_STORE_DOMAIN.trim();
+	// Remove https:// if present
+	storeDomain = storeDomain.replace(/^https?:\/\//, '');
+	// Remove trailing slash
+	storeDomain = storeDomain.replace(/\/$/, '');
+
 	// Try cartCreate first (newer API), fallback to checkoutCreate (older API)
 	const mutation = `
 		mutation cartCreate($input: CartInput!) {
@@ -75,7 +82,7 @@ export async function createCheckout(lineItems: CheckoutLineItem[]): Promise<str
 	};
 
 	try {
-		const response = await fetch(`https://${SHOPIFY_STORE_DOMAIN}/api/2024-01/graphql.json`, {
+		const response = await fetch(`https://${storeDomain}/api/2024-01/graphql.json`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
